@@ -1,13 +1,56 @@
 package main
 
 import (
+	"encoding/base64"
+	"fmt"
 	"io"
 	"log"
 	"net"
 	"net/http"
+	"strings"
 )
 
+const (
+	username = "user"
+	password = "pass"
+)
+
+func checkProxyAuth(r *http.Request) bool {
+	proxyAuthHeader := r.Header.Get("Proxy-Authorization")
+	if proxyAuthHeader == "" {
+		return false
+	}
+
+	authParts := strings.SplitN(proxyAuthHeader, " ", 2)
+	if len(authParts) != 2 || authParts[0] != "Basic" {
+		return false
+	}
+
+	fmt.Println(authParts)
+
+	authDecoded, err := base64.StdEncoding.DecodeString(authParts[1])
+	if err != nil {
+		return false
+	}
+
+	authStr := string(authDecoded)
+	fmt.Println(authStr)
+	authCreds := strings.SplitN(authStr, ":", 2)
+	fmt.Println(authStr)
+	if len(authCreds) != 2 || authCreds[0] != username || authCreds[1] != password {
+		return false
+	}
+
+	return true
+}
+
 func handleTunneling(w http.ResponseWriter, r *http.Request) {
+	if !checkProxyAuth(r) {
+		w.Header().Set("Proxy-Authenticate", `Basic realm="Restricted"`)
+		http.Error(w, "Proxy Authentication Required", http.StatusProxyAuthRequired)
+		return
+	}
+
 	destConn, err := net.Dial("tcp", r.Host)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
@@ -34,6 +77,12 @@ func transfer(destination io.WriteCloser, source io.ReadCloser) {
 }
 
 func handleHTTP(w http.ResponseWriter, r *http.Request) {
+	if !checkProxyAuth(r) {
+		w.Header().Set("Proxy-Authenticate", `Basic realm="Restricted"`)
+		http.Error(w, "Proxy Authentication Required", http.StatusProxyAuthRequired)
+		return
+	}
+
 	resp, err := http.DefaultTransport.RoundTrip(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
