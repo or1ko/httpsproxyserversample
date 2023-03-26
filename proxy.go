@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/base64"
-	"fmt"
 	"io"
 	"log"
 	"net"
@@ -12,7 +11,7 @@ import (
 
 const (
 	username = "user"
-	password = "pass"
+	password = ""
 )
 
 func checkProxyAuth(r *http.Request) bool {
@@ -26,17 +25,13 @@ func checkProxyAuth(r *http.Request) bool {
 		return false
 	}
 
-	fmt.Println(authParts)
-
 	authDecoded, err := base64.StdEncoding.DecodeString(authParts[1])
 	if err != nil {
 		return false
 	}
 
 	authStr := string(authDecoded)
-	fmt.Println(authStr)
 	authCreds := strings.SplitN(authStr, ":", 2)
-	fmt.Println(authStr)
 	if len(authCreds) != 2 || authCreds[0] != username || authCreds[1] != password {
 		return false
 	}
