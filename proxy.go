@@ -104,7 +104,7 @@ func copyHeader(dst, src http.Header) {
 
 func main() {
 	server := &http.Server{
-		Addr: ":8080",
+		Addr: ":18080",
 		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if r.Method == http.MethodConnect {
 				handleTunneling(w, r)
@@ -114,6 +114,6 @@ func main() {
 		}),
 	}
 
-	log.Println("Starting HTTP proxy server on :8080")
+	log.Println("Starting HTTP proxy server on :18080")
 	log.Fatal(server.ListenAndServe())
 }
